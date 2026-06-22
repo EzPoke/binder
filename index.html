@@ -115,15 +115,36 @@ const SEED=[{"no": 1, "name": "Bulbasaur", "set": "Vending Series 1", "cardNo": 
 
 let cards=[], flt='all', ed=null;
 
-function load(){
-  try{const r=localStorage.getItem('binder-v3');cards=r?JSON.parse(r):JSON.parse(JSON.stringify(SEED));}
-  catch(e){cards=JSON.parse(JSON.stringify(SEED));}
+const SUPA_URL='https://odoaxtiszpryzfhuehms.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kb2F4dGlzenByeXpmaHVlaG1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMjA1NjYsImV4cCI6MjA5NzY5NjU2Nn0.ks_cRWiIajwH-Wp5YxoThhwopQjDJkj8o9FNj48XRgE';
+
+function sbFetch(path,opts={}){
+  return fetch(SUPA_URL+path,{...opts,headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',...(opts.headers||{})}});
+}
+
+async function load(){
+  cards=JSON.parse(JSON.stringify(SEED));
+  try{
+    const r=await sbFetch('/rest/v1/collection?select=*&order=no.asc');
+    const rows=await r.json();
+    if(rows&&rows.length){
+      rows.forEach(row=>{
+        const c=cards.find(x=>x.no===row.no);
+        if(c){c.got=row.got;c.note=row.note||'';c.set=row.set||c.set;c.cardNo=row.cardNo||c.cardNo;c.link=row.link||c.link;}
+      });
+    } else {
+      await sbFetch('/rest/v1/collection',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(SEED.map(c=>({no:c.no,got:c.got,note:c.note,set:c.set,cardNo:c.cardNo,link:c.link})))});
+    }
+  }catch(e){console.error(e);}
   draw();
 }
 
-function save(){
-  try{localStorage.setItem('binder-v3',JSON.stringify(cards));toast();}
-  catch(e){console.error(e);}
+async function save(){
+  try{
+    const rows=cards.map(c=>({no:c.no,got:c.got,note:c.note,set:c.set,cardNo:c.cardNo,link:c.link}));
+    await sbFetch('/rest/v1/collection',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(rows)});
+    toast();
+  }catch(e){console.error(e);}
 }
 
 function toast(){
