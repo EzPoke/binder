@@ -94,6 +94,16 @@ input[type=search]:focus{border-color:#3b82f6}
 .mimg-replace label:hover{background:rgba(0,0,0,.75)}
 @keyframes fu{0%{opacity:0;transform:translateY(5px)}10%{opacity:1;transform:translateY(0)}75%{opacity:1}100%{opacity:0}}
 .empty{grid-column:1/-1;text-align:center;padding:60px;color:#bbb;font-size:14px}
+/* value bar */
+.val-bar{background:#f8f8f8;border-bottom:1px solid #e8e8e8;padding:6px 20px;display:flex;align-items:center;gap:20px;font-size:12px;color:#666;flex-wrap:wrap}
+.val-item{display:flex;align-items:center;gap:5px}
+.val-item b{color:#111;font-size:13px}
+.val-item.profit b{color:#16a34a}
+.val-item.loss b{color:#ef4444}
+.val-divider{width:1px;height:14px;background:#ddd}
+/* price fields side by side */
+.price-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* set search */
 </style>
 </head>
 <body>
@@ -107,12 +117,20 @@ input[type=search]:focus{border-color:#3b82f6}
   </div>
   <div class="bar-right">
     <input type="search" id="srch" placeholder="Search…" oninput="draw()">
+
     <div class="filters">
       <button class="fb on" data-f="all" onclick="setF('all')">All</button>
       <button class="fb" data-f="got" onclick="setF('got')">Got</button>
       <button class="fb" data-f="need" onclick="setF('need')">Need</button>
     </div>
   </div>
+</div>
+<div class="val-bar" id="val-bar">
+  <div class="val-item"><span>Collection value:</span><b id="v-value">£0.00</b></div>
+  <div class="val-divider"></div>
+  <div class="val-item"><span>Total spent:</span><b id="v-spent">£0.00</b></div>
+  <div class="val-divider"></div>
+  <div class="val-item" id="v-diff-wrap"><span>Difference:</span><b id="v-diff">£0.00</b></div>
 </div>
 <div class="binder"><div class="grid" id="grid"></div></div>
 <div id="mr"></div>
@@ -138,10 +156,10 @@ async function load(){
     if(rows&&rows.length){
       rows.forEach(row=>{
         const c=cards.find(x=>x.no===row.no);
-        if(c){c.got=row.got;c.note=row.note||'';c.set=row.set||c.set;c.cardNo=row.cardNo||c.cardNo;c.link=row.link||c.link;c.customImg=row.customImg||null;}
+        if(c){c.got=row.got;c.note=row.note||'';c.set=row.set||c.set;c.cardNo=row.cardNo||c.cardNo;c.link=row.link||c.link;c.customImg=row.customImg||null;c.price=row.price||'';c.paid=row.paid||'';}
       });
     } else {
-      await sbFetch('/rest/v1/collection',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(SEED.map(c=>({no:c.no,got:c.got,note:c.note,set:c.set,cardNo:c.cardNo,link:c.link,customImg:null})))});
+      await sbFetch('/rest/v1/collection',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(SEED.map(c=>({no:c.no,got:c.got,note:c.note,set:c.set,cardNo:c.cardNo,link:c.link,customImg:null,price:null,paid:null})))});
     }
   }catch(e){console.error(e);}
   draw();
@@ -149,7 +167,7 @@ async function load(){
 
 async function save(){
   try{
-    const rows=cards.map(c=>({no:c.no,got:c.got,note:c.note,set:c.set,cardNo:c.cardNo,link:c.link,customImg:c.customImg||null}));
+    const rows=cards.map(c=>({no:c.no,got:c.got,note:c.note,set:c.set,cardNo:c.cardNo,link:c.link,customImg:c.customImg||null,price:c.price||null,paid:c.paid||null}));
     await sbFetch('/rest/v1/collection',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(rows)});
     toast();
   }catch(e){console.error(e);}
@@ -162,17 +180,26 @@ function toast(msg,type){
   document.body.appendChild(t);setTimeout(()=>t.remove(),2200);
 }
 
-function setF(f){
-  flt=f;
-  document.querySelectorAll('.fb').forEach(b=>b.classList.toggle('on',b.dataset.f===f));
-  draw();
-}
 
 function draw(){
   const q=document.getElementById('srch').value.toLowerCase();
+
   const got=cards.filter(c=>c.got).length;
   document.getElementById('gc').textContent=got;
   document.getElementById('pf').style.width=(got/151*100)+'%';
+
+  // value totals
+  const parsePrice=v=>parseFloat((v||'').replace(/[^0-9.]/g,''))||0;
+  let totalVal=0,totalSpent=0;
+  cards.filter(c=>c.got).forEach(c=>{totalVal+=parsePrice(c.price);totalSpent+=parsePrice(c.paid);});
+  const fmt=n=>'£'+n.toFixed(2);
+  document.getElementById('v-value').textContent=fmt(totalVal);
+  document.getElementById('v-spent').textContent=fmt(totalSpent);
+  const diff=totalVal-totalSpent;
+  const diffEl=document.getElementById('v-diff');
+  const diffWrap=document.getElementById('v-diff-wrap');
+  diffEl.textContent=(diff>=0?'+':'')+fmt(diff);
+  diffWrap.className='val-item '+(diff>0?'profit':diff<0?'loss':'');
 
   const vis=cards.filter(c=>{
     if(flt==='got'&&!c.got)return false;
@@ -239,7 +266,11 @@ function openEdit(no){
           <div class="fg"><label class="fl">Set</label><input class="fi" id="fs" value="${c.set||''}" oninput="ed.set=this.value"></div>
           <div class="fg"><label class="fl">Card Number</label><input class="fi" id="fn" value="${c.cardNo||''}" oninput="ed.cardNo=this.value"></div>
           <div class="fg"><label class="fl">Link</label><input class="fi" id="fl2" value="${c.link||''}" oninput="ed.link=this.value"></div>
-          <div class="fg"><label class="fl">Notes</label><input class="fi" id="fnt" value="${c.note||''}" oninput="ed.note=this.value" placeholder="e.g. Holo, £20, Near Mint…"></div>
+          <div class="fg"><label class="fl">Notes</label><input class="fi" id="fnt" value="${c.note||''}" oninput="ed.note=this.value" placeholder="e.g. Holo, Near Mint…"></div>
+          <div class="price-row">
+            <div class="fg"><label class="fl">Market value</label><input class="fi" id="fprice" value="${c.price||''}" oninput="ed.price=this.value" placeholder="£0.00"></div>
+            <div class="fg"><label class="fl">What I paid</label><input class="fi" id="fpaid" value="${c.paid||''}" oninput="ed.paid=this.value" placeholder="£0.00"></div>
+          </div>
         </div>
         <div class="mf">
           <button class="bcancel" onclick="closeModal()">Cancel</button>
