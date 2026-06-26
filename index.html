@@ -123,13 +123,13 @@ input[type=search]:focus{border-color:#3b82f6}
     <input type="search" id="srch" placeholder="Search…" oninput="draw()">
 
     <div class="filters">
-      <button class="fb on" data-f="all">All</button>
-      <button class="fb" data-f="got">Got</button>
-      <button class="fb" data-f="need">Need</button>
+      <button class="fb on" data-f="all" onclick="setF('all')">All</button>
+      <button class="fb" data-f="got" onclick="setF('got')">Got</button>
+      <button class="fb" data-f="need" onclick="setF('need')">Need</button>
     </div>
     <div class="price-slider-wrap">
       <label for="price-slider">Max&nbsp;£</label>
-      <input type="range" id="price-slider" min="0" max="200" step="1" value="200">
+      <input type="range" id="price-slider" min="0" max="200" step="1" value="200" oninput="onSlider(this.value)">
       <span id="price-label">Any</span>
     </div>
 
@@ -337,11 +337,19 @@ function saveEdit(){
   save();closeModal();draw();
 }
 
-document.addEventListener('DOMContentLoaded', function(){
-  document.getElementById('price-slider').addEventListener('input', function(){ onSlider(this.value); });
-  document.querySelectorAll('.fb').forEach(b => b.addEventListener('click', function(){ setF(this.dataset.f); }));
-  load();
-});
+function setF(f){
+  flt=f;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.toggle('on',b.dataset.f===f));
+  draw();
+}
+
+function onSlider(val){
+  maxPrice=parseInt(val);
+  document.getElementById('price-label').textContent=maxPrice>=200?'Any':'£'+maxPrice;
+  draw();
+}
+
+load();
 </script>
 </body>
 </html>
