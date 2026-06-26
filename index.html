@@ -111,23 +111,6 @@ input[type=search]:focus{border-color:#3b82f6}
 .val-divider{width:1px;height:14px;background:#ddd}
 /* price fields side by side */
 .price-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-
-/* BULK UPLOAD */
-.bulk-bar{background:#fffbeb;border-bottom:2px dashed #fcd34d;padding:8px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.bulk-toggle{font-size:12px;font-weight:600;color:#92400e;background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;gap:5px}
-.bulk-toggle:hover{color:#78350f}
-.bulk-panel{padding:14px 20px;background:#fffbeb;border-bottom:1px solid #fcd34d;display:none}
-.bulk-panel.open{display:block}
-.bulk-drop{border:2px dashed #fcd34d;border-radius:8px;padding:24px;text-align:center;color:#92400e;font-size:13px;cursor:pointer;transition:all .15s;background:#fff}
-.bulk-drop:hover,.bulk-drop.over{border-color:#f59e0b;background:#fef3c7}
-.bulk-drop input{display:none}
-.bulk-log{margin-top:12px;max-height:160px;overflow-y:auto;font-size:11px;font-family:monospace;background:#fff;border:1px solid #fcd34d;border-radius:6px;padding:8px;display:none}
-.bulk-log.open{display:block}
-.bulk-log div{padding:1px 0;color:#555}
-.bulk-log div.ok{color:#16a34a}
-.bulk-log div.err{color:#ef4444}
-.bulk-log div.skip{color:#9ca3af}
-.bulk-progress{margin-top:10px;font-size:12px;color:#92400e;font-weight:600}
 </style>
 </head>
 <body>
@@ -155,21 +138,6 @@ input[type=search]:focus{border-color:#3b82f6}
   <div class="val-item"><span>Total spent:</span><b id="v-spent">£0.00</b></div>
   <div class="val-divider"></div>
   <div class="val-item" id="v-diff-wrap"><span>Difference:</span><b id="v-diff">£0.00</b></div>
-</div>
-<div class="bulk-bar">
-  <button class="bulk-toggle" onclick="toggleBulk()">📦 Bulk image upload <span id="bulk-arrow">▼</span></button>
-  <span style="font-size:11px;color:#b45309">Drop all card images at once — files must be named 1.jpg, 2.png etc.</span>
-</div>
-<div class="bulk-panel" id="bulk-panel">
-  <div class="bulk-drop" id="bulk-drop"
-    ondragover="event.preventDefault();this.classList.add('over')"
-    ondragleave="this.classList.remove('over')"
-    ondrop="handleBulkDrop(event)">
-    <div>Drag &amp; drop images here, or <label style="color:#d97706;cursor:pointer;text-decoration:underline">click to browse<input type="file" accept="image/*" multiple onchange="handleBulkFiles(this.files)"></label></div>
-    <div style="font-size:11px;margin-top:4px;color:#b45309">Expects files named 1.jpg / 2.png / 3.webp … 151.jpg</div>
-  </div>
-  <div class="bulk-progress" id="bulk-progress"></div>
-  <div class="bulk-log" id="bulk-log"></div>
 </div>
 <div class="binder"><div class="grid" id="grid"></div></div>
 <div id="mr"></div>
@@ -381,88 +349,6 @@ function saveEdit(){
   const i=cards.findIndex(c=>c.no===ed.no);
   if(i!==-1)cards[i]=ed;
   save();closeModal();draw();
-}
-
-function toggleBulk(){
-  const panel=document.getElementById('bulk-panel');
-  const arrow=document.getElementById('bulk-arrow');
-  const open=panel.classList.toggle('open');
-  arrow.textContent=open?'▲':'▼';
-}
-
-function handleBulkDrop(e){
-  e.preventDefault();
-  document.getElementById('bulk-drop').classList.remove('over');
-  handleBulkFiles(e.dataTransfer.files);
-}
-
-async function handleBulkFiles(files){
-  const log=document.getElementById('bulk-log');
-  const prog=document.getElementById('bulk-progress');
-  log.innerHTML='';
-  log.classList.add('open');
-
-  // Filter to only files whose name starts with a number 1-151
-  const valid=[];
-  for(const f of files){
-    const base=f.name.replace(/\.[^.]+$/,'');
-    const n=parseInt(base,10);
-    if(!isNaN(n)&&n>=1&&n<=151&&String(n)===base) valid.push({file:f,no:n});
-    else logLine(log,`Skipped: ${f.name} (name must be a number 1–151)`,'skip');
-  }
-  valid.sort((a,b)=>a.no-b.no);
-
-  if(!valid.length){prog.textContent='No valid files found.';return;}
-
-  let done=0,errs=0;
-  prog.textContent=`Uploading 0 / ${valid.length}…`;
-
-  for(const {file,no} of valid){
-    const ext=file.name.split('.').pop();
-    const path=`card-${no}-bulk.${ext}`;
-    try{
-      const res=await fetch(`${SUPA_URL}/storage/v1/object/card-images/${path}`,{
-        method:'POST',
-        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':file.type,'Cache-Control':'3600'},
-        body:file
-      });
-      if(!res.ok){
-        // Try PATCH in case file already exists
-        const res2=await fetch(`${SUPA_URL}/storage/v1/object/card-images/${path}`,{
-          method:'PUT',
-          headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':file.type,'Cache-Control':'3600'},
-          body:file
-        });
-        if(!res2.ok)throw new Error(await res2.text());
-      }
-      const publicUrl=`${SUPA_URL}/storage/v1/object/public/card-images/${path}`;
-      // Update DB
-      await sbFetch('/rest/v1/collection?no=eq.'+no,{
-        method:'PATCH',
-        headers:{'Prefer':'return=minimal'},
-        body:JSON.stringify({customImg:publicUrl})
-      });
-      // Update local cards array
-      const c=cards.find(x=>x.no===no);
-      if(c)c.customImg=publicUrl;
-      done++;
-      logLine(log,`✓ #${String(no).padStart(3,'0')} ${c?c.name:''}`,'ok');
-    }catch(e){
-      errs++;
-      logLine(log,`✗ #${String(no).padStart(3,'0')} — ${e.message}`,'err');
-    }
-    prog.textContent=`Uploading ${done+errs} / ${valid.length}…`;
-  }
-  prog.textContent=`Done — ${done} uploaded${errs?', '+errs+' failed':''}.`;
-  draw();
-}
-
-function logLine(log,msg,cls){
-  const d=document.createElement('div');
-  d.className=cls||'';
-  d.textContent=msg;
-  log.appendChild(d);
-  log.scrollTop=log.scrollHeight;
 }
 
 load();
