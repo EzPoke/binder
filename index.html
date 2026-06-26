@@ -337,10 +337,11 @@ function saveEdit(){
   save();closeModal();draw();
 }
 
-document.getElementById('price-slider').addEventListener('input', function(){ onSlider(this.value); });
-document.querySelectorAll('.fb').forEach(b => b.addEventListener('click', function(){ setF(this.dataset.f); }));
-
-load();
+document.addEventListener('DOMContentLoaded', function(){
+  document.getElementById('price-slider').addEventListener('input', function(){ onSlider(this.value); });
+  document.querySelectorAll('.fb').forEach(b => b.addEventListener('click', function(){ setF(this.dataset.f); }));
+  load();
+});
 </script>
 </body>
 </html>
