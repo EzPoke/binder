@@ -100,6 +100,10 @@ input[type=search]:focus{border-color:#3b82f6}
 .mimg-replace{position:absolute;bottom:4px;left:0;right:0;text-align:center}
 .mimg-replace label{font-size:10px;background:rgba(0,0,0,.55);color:#fff;padding:3px 8px;border-radius:4px;cursor:pointer;white-space:nowrap}
 .mimg-replace label:hover{background:rgba(0,0,0,.75)}
+@keyframes onAutoFillStart{from{}to{}}
+@keyframes onAutoFillCancel{from{}to{}}
+input:-webkit-autofill{animation-name:onAutoFillStart}
+input:not(:-webkit-autofill){animation-name:onAutoFillCancel}
 @keyframes fu{0%{opacity:0;transform:translateY(5px)}10%{opacity:1;transform:translateY(0)}75%{opacity:1}100%{opacity:0}}
 .empty{grid-column:1/-1;text-align:center;padding:60px;color:#bbb;font-size:14px}
 /* value bar */
@@ -439,7 +443,7 @@ function showAuthModal(onSuccess){
     <div class="auth-ov" id="auth-ov" onclick="if(event.target.id==='auth-ov')closeAuthModal()">
       <div class="auth-box" style="position:relative;padding-top:36px">
         <button class="auth-close" onclick="closeAuthModal()">×</button>
-        <input type="password" id="auth-pw" placeholder="Password" onkeydown="if(event.key==='Enter')tryLogin()">
+        <input type="password" id="auth-pw" placeholder="Password" onkeydown="if(event.key==='Enter')tryLogin()" autocomplete="current-password">
         <div class="auth-err" id="auth-err"></div>
       </div>
     </div>`;
@@ -477,17 +481,7 @@ async function tryLogin(){
 }
 
 initAuth();
-let _qlTimer=null, _mlTimer=null;
 
-function scheduleQuickLogin(input){
-  clearTimeout(_qlTimer);
-  _qlTimer=setTimeout(()=>{if(input.value)quickLogin(input.value);},300);
-}
-
-function scheduleModalLogin(input){
-  clearTimeout(_mlTimer);
-  _mlTimer=setTimeout(()=>{if(input.value)modalLogin(input);},300);
-}
 
 async function modalLogin(input){
   const pw=input.value;
@@ -504,6 +498,19 @@ async function modalLogin(input){
     setTimeout(()=>{input.style.borderColor='#e0e0e0';},1200);
   }
 }
+
+document.addEventListener('animationstart', function(e){
+  if(e.animationName === 'onAutoFillStart'){
+    const el = e.target;
+    if(!el) return;
+    setTimeout(()=>{
+      if(!el.value) return;
+      if(el.id === 'auth-btn') quickLogin(el.value);
+      else if(el.id === 'modal-pw') modalLogin(el);
+      else if(el.id === 'auth-pw') tryLogin();
+    }, 100);
+  }
+}, true);
 
 document.addEventListener('keydown', function(e){
   if(e.key !== 'Escape') return;
