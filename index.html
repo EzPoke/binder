@@ -111,6 +111,21 @@ input[type=search]:focus{border-color:#3b82f6}
 .val-divider{width:1px;height:14px;background:#ddd}
 /* price fields side by side */
 .price-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+
+/* AUTH */
+.auth-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200}
+.auth-box{background:#fff;border-radius:12px;padding:28px 24px;width:100%;max-width:320px;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center}
+.auth-box h2{font-size:15px;font-weight:700;margin-bottom:6px}
+.auth-box p{font-size:12px;color:#888;margin-bottom:18px}
+.auth-box input{width:100%;padding:9px 12px;border:1px solid #e0e0e0;border-radius:7px;font-size:14px;outline:none;margin-bottom:10px;text-align:center;letter-spacing:2px}
+.auth-box input:focus{border-color:#3b82f6}
+.auth-box button{width:100%;padding:9px;border:none;border-radius:7px;background:#3b82f6;color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+.auth-close{position:absolute!important;top:10px!important;right:12px!important;width:auto!important;background:none!important;padding:0!important;font-size:22px!important;color:#aaa!important;line-height:1!important;border-radius:0!important}
+.auth-box button:hover{background:#2563eb}
+.auth-box .auth-err{font-size:12px;color:#ef4444;margin-top:8px;min-height:16px}
+.auth-badge{font-size:11px;color:#22c55e;cursor:pointer;padding:4px 8px;border-radius:4px;border:1px solid #dcfce7;background:#f0fdf4}
+.auth-badge:hover{background:#dcfce7}
 </style>
 </head>
 <body>
@@ -125,6 +140,7 @@ input[type=search]:focus{border-color:#3b82f6}
   <div class="bar-right">
     <input type="search" id="srch" placeholder="Search…" oninput="draw()">
     <div class="price-filter"><span>Up to £</span><input type="number" id="pmax" min="0" step="1" placeholder="any" oninput="draw()"></div>
+    <button class="auth-badge" id="auth-btn" onclick="handleAuthBtn()" >🔒 Locked</button>
     <div class="filters">
       <button class="fb on" data-f="all" onclick="setF('all')">All</button>
       <button class="fb" data-f="got" onclick="setF('got')">Got</button>
@@ -139,8 +155,12 @@ input[type=search]:focus{border-color:#3b82f6}
   <div class="val-divider"></div>
   <div class="val-item" id="v-diff-wrap"><span>Difference:</span><b id="v-diff">£0.00</b></div>
 </div>
+  </div>
+</div>
 <div class="binder"><div class="grid" id="grid"></div></div>
 <div id="mr"></div>
+<div id="auth-modal"></div>
+
 
 <script>
 const SEED=[{"no": 1, "name": "Bulbasaur", "set": "Vending Series 1", "cardNo": "1/36", "link": "https://bulbapedia.bulbagarden.net/wiki/Bulbasaur_%28Vending_S1%29", "got": false, "note": "50"}, {"no": 2, "name": "Ivysaur", "set": "Best of Promo", "cardNo": "6/9", "link": "https://www.serebii.net/card/bestofgame/006.shtml", "got": true, "note": "40"}, {"no": 3, "name": "Venusaur", "set": "Wizards Promo", "cardNo": "13/54", "link": "https://www.serebii.net/card/wizardspromos/013.shtml", "got": false, "note": "Holo"}, {"no": 4, "name": "Charmander", "set": "Crystal Guardians", "cardNo": "49/100", "link": "https://www.serebii.net/card/excrystalguardians/049.shtml", "got": false, "note": "33"}, {"no": 5, "name": "Charmeleon", "set": "Expedition", "cardNo": "99/165", "link": "https://www.serebii.net/card/expedition/073.shtml", "got": false, "note": "20"}, {"no": 6, "name": "Charizard", "set": "Neo Destiny", "cardNo": "107/105", "link": "https://www.serebii.net/card/neodestiny/107.shtml", "got": false, "note": "Shining"}, {"no": 7, "name": "Squirtle", "set": "Expedition", "cardNo": "132/165", "link": "https://www.serebii.net/card/expedition/132.shtml", "got": false, "note": "20"}, {"no": 8, "name": "Wartortle", "set": "Fire Red / Leaf Green", "cardNo": "50/112", "link": "https://www.serebii.net/card/exfireredandleafgreen/050.shtml", "got": false, "note": "£6–£20"}, {"no": 9, "name": "Blastoise", "set": "Expedition", "cardNo": "37/165", "link": "https://www.serebii.net/card/expedition/037.shtml", "got": false, "note": "Holo"}, {"no": 10, "name": "Caterpie", "set": "Expedition", "cardNo": "96/165", "link": "https://www.serebii.net/card/expedition/096.shtml", "got": false, "note": "7"}, {"no": 11, "name": "Metapod", "set": "Vending Series 1", "cardNo": "3/36", "link": "https://bulbapedia.bulbagarden.net/wiki/Metapod_%28Vending_S1%29", "got": false, "note": ""}, {"no": 12, "name": "Butterfree", "set": "Jungle", "cardNo": "33/64", "link": "https://www.serebii.net/card/jungle/033.shtml", "got": true, "note": ""}, {"no": 13, "name": "Weedle", "set": "Skyridge", "cardNo": "115/144", "link": "https://www.serebii.net/card/skyridge/115.shtml", "got": false, "note": ""}, {"no": 14, "name": "Kakuna", "set": "Neo Discovery", "cardNo": "41/75", "link": "https://www.serebii.net/card/neodiscovery/041.shtml", "got": false, "note": ""}, {"no": 15, "name": "Beedrill", "set": "Vs", "cardNo": "61/141", "link": "https://www.serebii.net/card/vs/061.shtml", "got": false, "note": ""}, {"no": 16, "name": "Pidgey", "set": "Vending Series 1", "cardNo": "24/36", "link": "https://bulbapedia.bulbagarden.net/wiki/Pidgey_(Vending_S1)", "got": false, "note": ""}, {"no": 17, "name": "Pidgeotto", "set": "Expedition", "cardNo": "88/165", "link": "https://www.serebii.net/card/expedition/088.shtml", "got": true, "note": ""}, {"no": 18, "name": "Pidgeot", "set": "Jungle", "cardNo": "8/64", "link": "https://www.serebii.net/card/jungle/008.shtml", "got": true, "note": "Holo"}, {"no": 19, "name": "Rattata", "set": "Base", "cardNo": "61/102", "link": "https://www.serebii.net/card/base/061.shtml", "got": true, "note": ""}, {"no": 20, "name": "Raticate", "set": "Skyridge", "cardNo": "89/144", "link": "https://www.serebii.net/card/skyridge/089.shtml", "got": false, "note": ""}, {"no": 21, "name": "Spearow", "set": "Expedition", "cardNo": "130/165", "link": "https://www.serebii.net/card/expedition/130.shtml", "got": true, "note": ""}, {"no": 22, "name": "Fearow", "set": "Expedition", "cardNo": "45/165", "link": "https://www.serebii.net/card/expedition/045.shtml", "got": false, "note": ""}, {"no": 23, "name": "Ekans", "set": "Expedition", "cardNo": "108/165", "link": "https://www.serebii.net/card/expedition/108.shtml", "got": false, "note": ""}, {"no": 24, "name": "Arbok", "set": "Fossil", "cardNo": "31/62", "link": "https://www.serebii.net/card/fossil/031.shtml", "got": false, "note": ""}, {"no": 25, "name": "Pikachu", "set": "Pop Series 5", "cardNo": "13/17", "link": "https://www.serebii.net/card/popseries5/013.shtml", "got": true, "note": ""}, {"no": 26, "name": "Raichu", "set": "Sandstorm", "cardNo": "98/100", "link": "https://www.serebii.net/card/exsandstorm/098.shtml", "got": false, "note": ""}, {"no": 27, "name": "Sandshrew", "set": "Skyridge", "cardNo": "92/144", "link": "https://www.serebii.net/card/skyridge/092.shtml", "got": false, "note": ""}, {"no": 28, "name": "Sandslash", "set": "Team Rocket Returns", "cardNo": "18/109", "link": "https://www.serebii.net/card/exteamrocketreturns/018.shtml", "got": false, "note": ""}, {"no": 29, "name": "Nidoran♀", "set": "Skyridge", "cardNo": "81/144", "link": "https://www.serebii.net/card/skyridge/081.shtml", "got": false, "note": ""}, {"no": 30, "name": "Nidorina", "set": "Skyridge", "cardNo": "83/144", "link": "https://www.serebii.net/card/skyridge/083.shtml", "got": false, "note": ""}, {"no": 31, "name": "Nidoqueen", "set": "Skyridge", "cardNo": "22/144", "link": "https://www.serebii.net/card/skyridge/022.shtml", "got": false, "note": "Holo/non-Holo"}, {"no": 32, "name": "Nidoran♂", "set": "Vending Series 1", "cardNo": "7/36", "link": "https://bulbapedia.bulbagarden.net/wiki/Nidoran%E2%99%82_(Vending_S1)", "got": false, "note": ""}, {"no": 33, "name": "Nidorino", "set": "Vending Series 3", "cardNo": "3/53", "link": "https://bulbapedia.bulbagarden.net/wiki/Nidorino_(Vending_S3)", "got": false, "note": ""}, {"no": 34, "name": "Nidoking", "set": "Dragon Frontiers", "cardNo": "6/101", "link": "https://www.serebii.net/card/exdragonfrontiers/006.shtml", "got": false, "note": "Holo"}, {"no": 35, "name": "Clefairy", "set": "Gym Challenge", "cardNo": "40/132", "link": "https://www.serebii.net/card/gymchallenge/040.shtml", "got": false, "note": ""}, {"no": 36, "name": "Clefable", "set": "Gym Heroes", "cardNo": "3/132", "link": "https://www.serebii.net/card/gymheroes/003.shtml", "got": false, "note": "Holo"}, {"no": 37, "name": "Vulpix", "set": "McDonald's Promo", "cardNo": "5/18", "link": "https://www.serebii.net/card/mcdonaldspromos/005.shtml", "got": false, "note": ""}, {"no": 38, "name": "Ninetales", "set": "Dragon Frontiers", "cardNo": "8/101", "link": "https://www.serebii.net/card/exdragonfrontiers/008.shtml", "got": false, "note": ""}, {"no": 39, "name": "Jigglypuff", "set": "Hidden Legends", "cardNo": "63/101", "link": "https://www.serebii.net/card/exhiddenlegends/063.shtml", "got": false, "note": ""}, {"no": 40, "name": "Wigglytuff", "set": "Vending Series 1", "cardNo": "27/36", "link": "https://bulbapedia.bulbagarden.net/wiki/Wigglytuff_(Vending_S1)", "got": false, "note": ""}, {"no": 41, "name": "Zubat", "set": "Skyridge", "cardNo": "117/144", "link": "https://www.serebii.net/card/skyridge/117.shtml", "got": false, "note": ""}, {"no": 42, "name": "Golbat", "set": "Skyridge", "cardNo": "60/144", "link": "https://www.serebii.net/card/skyridge/060.shtml", "got": false, "note": ""}, {"no": 43, "name": "Oddish", "set": "Gym Heroes", "cardNo": "47/132", "link": "https://www.serebii.net/card/gymheroes/047.shtml", "got": false, "note": ""}, {"no": 44, "name": "Gloom", "set": "Aquapolis", "cardNo": "49/147", "link": "https://www.serebii.net/card/aquapolis/049.shtml", "got": false, "note": ""}, {"no": 45, "name": "Vileplume", "set": "Gym Heroes", "cardNo": "5/132", "link": "https://www.serebii.net/card/gymheroes/005.shtml", "got": true, "note": "Holo"}, {"no": 46, "name": "Paras", "set": "Vending Series 1", "cardNo": "10/36", "link": "https://bulbapedia.bulbagarden.net/wiki/Paras_(Vending_S1)", "got": false, "note": ""}, {"no": 47, "name": "Parasect", "set": "Vending Series 1", "cardNo": "11/36", "link": "https://bulbapedia.bulbagarden.net/wiki/Parasect_(Vending_S1)", "got": false, "note": ""}, {"no": 48, "name": "Venonat", "set": "Skyridge", "cardNo": "112/144", "link": "https://www.serebii.net/card/skyridge/112.shtml", "got": false, "note": ""}, {"no": 49, "name": "Venomoth", "set": "Vs", "cardNo": "63/141", "link": "https://www.serebii.net/card/vs/063.shtml", "got": false, "note": ""}, {"no": 50, "name": "Diglett", "set": "Crystal Guardians", "cardNo": "50/100", "link": "https://www.serebii.net/card/excrystalguardians/050.shtml", "got": true, "note": ""}, {"no": 51, "name": "Dugtrio", "set": "Skyridge", "cardNo": "52/144", "link": "https://www.serebii.net/card/skyridge/052.shtml", "got": false, "note": ""}, {"no": 52, "name": "Meowth", "set": "Wizards Promo", "cardNo": "18/54", "link": "https://www.serebii.net/card/wizardspromos/018.shtml", "got": false, "note": "Holo?"}, {"no": 53, "name": "Persian", "set": "Skyridge", "cardNo": "42/144", "link": "https://www.serebii.net/card/skyridge/042.shtml", "got": false, "note": ""}, {"no": 54, "name": "Psyduck", "set": "Gym Challenge", "cardNo": "99/132", "link": "https://www.serebii.net/card/gymchallenge/099.shtml", "got": false, "note": ""}, {"no": 55, "name": "Golduck", "set": "Aquapolis", "cardNo": "50/147", "link": "https://www.serebii.net/card/aquapolis/050.shtml", "got": false, "note": ""}, {"no": 56, "name": "Mankey", "set": "Team Rocket", "cardNo": "61/82", "link": "https://www.serebii.net/card/teamrocket/061.shtml", "got": true, "note": ""}, {"no": 57, "name": "Primeape", "set": "Team Rocket", "cardNo": "43/82", "link": "https://www.serebii.net/card/teamrocket/043.shtml", "got": true, "note": ""}, {"no": 58, "name": "Growlithe", "set": "Gym Heroes", "cardNo": "35/132", "link": "https://www.serebii.net/card/gymheroes/035.shtml", "got": false, "note": ""}, {"no": 59, "name": "Arcanine", "set": "Aquapolis", "cardNo": "2/147", "link": "https://www.serebii.net/card/aquapolis/002.shtml", "got": false, "note": "holo but na"}, {"no": 60, "name": "Poliwag", "set": "Skyridge", "cardNo": "87/144", "link": "https://www.serebii.net/card/skyridge/087.shtml", "got": false, "note": ""}, {"no": 61, "name": "Poliwhirl", "set": "Skyridge", "cardNo": "88/144", "link": "https://www.serebii.net/card/skyridge/088.shtml", "got": false, "note": ""}, {"no": 62, "name": "Poliwrath", "set": "Vending Series 1", "cardNo": "18/144", "link": "https://bulbapedia.bulbagarden.net/wiki/Poliwrath_(Vending_S1)", "got": false, "note": ""}, {"no": 63, "name": "Abra", "set": "Expedition", "cardNo": "93/165", "link": "https://www.serebii.net/card/expedition/093.shtml", "got": true, "note": ""}, {"no": 64, "name": "Kadabra", "set": "Vending Series 3", "cardNo": "19/54", "link": "https://bulbapedia.bulbagarden.net/wiki/Kadabra_(Vending_S3_1)", "got": false, "note": ""}, {"no": 65, "name": "Alakazam", "set": "Skyridge", "cardNo": "2/144", "link": "https://www.serebii.net/card/skyridge/002.shtml", "got": false, "note": "Holo/non-Holo"}, {"no": 66, "name": "Machop", "set": "Vending Series 2", "cardNo": "21/36", "link": "https://bulbapedia.bulbagarden.net/wiki/Machop_(Vending_S2)", "got": false, "note": ""}, {"no": 67, "name": "Machoke", "set": "Vending Series 3", "cardNo": "28/52", "link": "https://bulbapedia.bulbagarden.net/wiki/Machoke_(Vending_S3)", "got": false, "note": ""}, {"no": 68, "name": "Machamp", "set": "Gym Challenge", "cardNo": "6/132", "link": "https://www.serebii.net/card/gymchallenge/006.shtml", "got": false, "note": "Holo"}, {"no": 69, "name": "Bellsprout", "set": "Fire Red / Leaf Green", "cardNo": "53/112", "link": "https://www.serebii.net/card/exfireredandleafgreen/053.shtml", "got": false, "note": ""}, {"no": 70, "name": "Weepinbell", "set": "Fire Red / Leaf Green", "cardNo": "51/112", "link": "https://www.serebii.net/card/exfireredandleafgreen/051.shtml", "got": false, "note": ""}, {"no": 71, "name": "Victreebel", "set": "Gym Heroes", "cardNo": "26/132", "link": "https://www.serebii.net/card/gymheroes/026.shtml", "got": false, "note": ""}, {"no": 72, "name": "Tentacool", "set": "Aquapolis", "cardNo": "113/147", "link": "https://www.serebii.net/card/aquapolis/113.shtml", "got": true, "note": ""}, {"no": 73, "name": "Tentacruel", "set": "Legend Maker", "cardNo": "45/92", "link": "https://www.serebii.net/card/exlegendmaker/045.shtml", "got": false, "note": ""}, {"no": 74, "name": "Geodude", "set": "Vending Series 1", "cardNo": "23/36", "link": "https://bulbapedia.bulbagarden.net/wiki/Geodude_(Vending_S1)", "got": false, "note": ""}, {"no": 75, "name": "Graveler", "set": "Ex Dragon", "cardNo": "29/97", "link": "https://www.serebii.net/card/exdragon/029.shtml", "got": false, "note": ""}, {"no": 76, "name": "Golem", "set": "Expedition", "cardNo": "14/165", "link": "https://www.serebii.net/card/expedition/014.shtml", "got": false, "note": "Holo/non-Holo"}, {"no": 77, "name": "Ponyta", "set": "Vending Series 3", "cardNo": "11/52", "link": "https://bulbapedia.bulbagarden.net/wiki/Ponyta_(Vending_S3)", "got": false, "note": ""}, {"no": 78, "name": "Rapidash", "set": "Team Rocket", "cardNo": "44/82", "link": "https://www.serebii.net/card/teamrocket/044.shtml", "got": false, "note": ""}, {"no": 79, "name": "Slowpoke", "set": "Team Rocket", "cardNo": "67/82", "link": "https://www.serebii.net/card/teamrocket/067.shtml", "got": false, "note": ""}, {"no": 80, "name": "Slowbro", "set": "Gym Heroes", "cardNo": "60/132", "link": "https://www.serebii.net/card/gymheroes/060.shtml", "got": false, "note": ""}, {"no": 81, "name": "Magnemite", "set": "Aquapolis", "cardNo": "91/147", "link": "https://www.serebii.net/card/aquapolis/091.shtml", "got": false, "note": ""}, {"no": 82, "name": "Magneton", "set": "Fossil", "cardNo": "26/62", "link": "https://www.serebii.net/card/fossil/026.shtml", "got": false, "note": "Holo"}, {"no": 83, "name": "Farfetch'd", "set": "Skyridge", "cardNo": "55/144", "link": "https://www.serebii.net/card/skyridge/055.shtml", "got": false, "note": ""}, {"no": 84, "name": "Doduo", "set": "Gym Challenge", "cardNo": "61/132", "link": "https://www.serebii.net/card/gymchallenge/061.shtml", "got": false, "note": ""}, {"no": 85, "name": "Dodrio", "set": "Fire Red / Leaf Green", "cardNo": "21/112", "link": "https://www.serebii.net/card/exfireredandleafgreen/021.shtml", "got": false, "note": ""}, {"no": 86, "name": "Seel", "set": "Dragon Frontiers", "cardNo": "62/101", "link": "https://www.serebii.net/card/exdragonfrontiers/062.shtml", "got": false, "note": ""}, {"no": 87, "name": "Dewgong", "set": "Vs", "cardNo": "39/141", "link": "https://www.serebii.net/card/vs/039.shtml", "got": false, "note": ""}, {"no": 88, "name": "Grimer", "set": "Fossil", "cardNo": "48/62", "link": "https://www.serebii.net/card/fossil/048.shtml", "got": false, "note": ""}, {"no": 89, "name": "Muk", "set": "Aquapolis", "cardNo": "23/147", "link": "https://www.serebii.net/card/aquapolis/023.shtml", "got": false, "note": "holo but na"}, {"no": 90, "name": "Shellder", "set": "Dragon Frontiers", "cardNo": "63/101", "link": "https://www.serebii.net/card/exdragonfrontiers/063.shtml", "got": true, "note": ""}, {"no": 91, "name": "Cloyster", "set": "Expedition", "cardNo": "42/165", "link": "https://www.serebii.net/card/expedition/042.shtml", "got": false, "note": "Holo"}, {"no": 92, "name": "Gastly", "set": "Gym Heroes", "cardNo": "93/132", "link": "https://www.serebii.net/card/gymheroes/093.shtml", "got": false, "note": ""}, {"no": 93, "name": "Haunter", "set": "Legend Maker", "cardNo": "35/92", "link": "https://www.serebii.net/card/exlegendmaker/035.shtml", "got": false, "note": ""}, {"no": 94, "name": "Gengar", "set": "Gym Challenge", "cardNo": "29/132", "link": "https://www.serebii.net/card/gymchallenge/029.shtml", "got": false, "note": ""}, {"no": 95, "name": "Onix", "set": "Gym Heroes", "cardNo": "69/132", "link": "https://www.serebii.net/card/gymheroes/069.shtml", "got": false, "note": ""}, {"no": 96, "name": "Drowzee", "set": "Aquapolis", "cardNo": "74/147", "link": "https://www.serebii.net/card/aquapolis/074.shtml", "got": true, "note": ""}, {"no": 97, "name": "Hypno", "set": "Vending Series 3", "cardNo": "25/52", "link": "https://bulbapedia.bulbagarden.net/wiki/Hypno_(Vending_S3)", "got": false, "note": ""}, {"no": 98, "name": "Krabby", "set": "Crystal Guardians", "cardNo": "54/100", "link": "https://www.serebii.net/card/excrystalguardians/054.shtml", "got": false, "note": ""}, {"no": 99, "name": "Kingler", "set": "Crystal Guardians", "cardNo": "22/100", "link": "https://www.serebii.net/card/excrystalguardians/022.shtml", "got": false, "note": ""}, {"no": 100, "name": "Voltorb", "set": "Delta Species", "cardNo": "71/113", "link": "https://www.serebii.net/card/exdeltaspecies/071.shtml", "got": false, "note": ""}, {"no": 101, "name": "Electrode", "set": "Team Rocket Returns", "cardNo": "4/109", "link": "https://www.serebii.net/card/exteamrocketreturns/004.shtml", "got": false, "note": "Holo"}, {"no": 102, "name": "Exeggcute", "set": "Aquapolis", "cardNo": "77/147", "link": "https://www.serebii.net/card/aquapolis/077.shtml", "got": false, "note": ""}, {"no": 103, "name": "Exeggutor", "set": "Vs", "cardNo": "73/141", "link": "https://www.serebii.net/card/vs/073.shtml", "got": false, "note": ""}, {"no": 104, "name": "Cubone", "set": "Jungle", "cardNo": "50/64", "link": "https://www.serebii.net/card/jungle/050.shtml", "got": true, "note": ""}, {"no": 105, "name": "Marowak", "set": "Fire Red / Leaf Green", "cardNo": "7/112", "link": "https://www.serebii.net/card/exfireredandleafgreen/007.shtml", "got": false, "note": "Holo"}, {"no": 106, "name": "Hitmonlee", "set": "HS Undaunted", "cardNo": "52/90", "link": "https://www.serebii.net/card/undaunted/052.shtml", "got": true, "note": ""}, {"no": 107, "name": "Hitmonchan", "set": "Best of Game", "cardNo": "9/9", "link": "https://www.serebii.net/card/bestofgame/009.shtml", "got": false, "note": ""}, {"no": 108, "name": "Lickitung", "set": "Gym Heroes", "cardNo": "41/132", "link": "https://www.serebii.net/card/gymheroes/041.shtml", "got": false, "note": ""}, {"no": 109, "name": "Koffing", "set": "Expedition", "cardNo": "114/165", "link": "https://www.serebii.net/card/expedition/114.shtml", "got": true, "note": ""}, {"no": 110, "name": "Weezing", "set": "Expedition", "cardNo": "70/165", "link": "https://www.serebii.net/card/expedition/070.shtml", "got": false, "note": "Holo/non-Holo"}, {"no": 111, "name": "Rhyhorn", "set": "Supreme Victors", "cardNo": "122/147", "link": "https://www.serebii.net/card/supremevictors/122.shtml", "got": false, "note": ""}, {"no": 112, "name": "Rhydon", "set": "Jungle", "cardNo": "45/64", "link": "https://www.serebii.net/card/jungle/045.shtml", "got": false, "note": ""}, {"no": 113, "name": "Chansey", "set": "Expedition", "cardNo": "72/165", "link": "https://www.serebii.net/card/expedition/072.shtml", "got": true, "note": ""}, {"no": 114, "name": "Tangela", "set": "Base", "cardNo": "66/102", "link": "https://www.serebii.net/card/base/066.shtml", "got": true, "note": ""}, {"no": 115, "name": "Kangaskhan", "set": "Aquapolis", "cardNo": "88/147", "link": "https://www.serebii.net/card/aquapolis/088.shtml", "got": false, "note": ""}, {"no": 116, "name": "Horsea", "set": "Dragon Frontiers", "cardNo": "31/101", "link": "https://www.serebii.net/card/exdragonfrontiers/031.shtml", "got": false, "note": ""}, {"no": 117, "name": "Seadra", "set": "Aquapolis", "cardNo": "58/147", "link": "https://www.serebii.net/card/aquapolis/058.shtml", "got": false, "note": ""}, {"no": 118, "name": "Goldeen", "set": "Gym Heroes", "cardNo": "85/132", "link": "https://www.serebii.net/card/gymheroes/085.shtml", "got": false, "note": ""}, {"no": 119, "name": "Seaking", "set": "Aquapolis", "cardNo": "59/147", "link": "https://www.serebii.net/card/aquapolis/059.shtml", "got": false, "note": ""}, {"no": 120, "name": "Staryu", "set": "Hidden Legends", "cardNo": "75/101", "link": "https://www.serebii.net/card/exhiddenlegends/075.shtml", "got": false, "note": ""}, {"no": 121, "name": "Starmie", "set": "Skyridge", "cardNo": "30/144", "link": "https://www.serebii.net/card/skyridge/030.shtml", "got": false, "note": "Holo/non-Holo"}, {"no": 122, "name": "Mr. Mime", "set": "Jungle", "cardNo": "22/64", "link": "https://www.serebii.net/card/jungle/022.shtml", "got": false, "note": "Holo"}, {"no": 123, "name": "Scyther", "set": "Neo Discovery", "cardNo": "46/75", "link": "https://www.serebii.net/card/neodiscovery/046.shtml", "got": true, "note": ""}, {"no": 124, "name": "Jynx", "set": "Aquapolis", "cardNo": "18/147", "link": "https://www.serebii.net/card/aquapolis/018.shtml", "got": false, "note": ""}, {"no": 125, "name": "Electabuzz", "set": "Base", "cardNo": "20/102", "link": "https://www.serebii.net/card/base/020.shtml", "got": true, "note": ""}, {"no": 126, "name": "Magmar", "set": "Fossil", "cardNo": "39/62", "link": "https://www.serebii.net/card/fossil/039.shtml", "got": true, "note": ""}, {"no": 127, "name": "Pinsir", "set": "Vending Series 1", "cardNo": "12/36", "link": "https://bulbapedia.bulbagarden.net/wiki/Pinsir_(Vending_S1)", "got": false, "note": ""}, {"no": 128, "name": "Tauros", "set": "Crystal Guardians", "cardNo": "12/100", "link": "https://www.serebii.net/card/excrystalguardians/012.shtml", "got": false, "note": "Fire Red holo"}, {"no": 129, "name": "Magikarp", "set": "Expedition", "cardNo": "118/165", "link": "https://www.serebii.net/card/expedition/118.shtml", "got": false, "note": ""}, {"no": 130, "name": "Gyarados", "set": "Skyridge", "cardNo": "11/144", "link": "https://www.serebii.net/card/skyridge/011.shtml", "got": false, "note": "Holo"}, {"no": 131, "name": "Lapras", "set": "Heart Gold Soul Silver", "cardNo": "24/123", "link": "https://www.serebii.net/card/heartgoldsoulsilver/024.shtml", "got": false, "note": ""}, {"no": 132, "name": "Ditto", "set": "Skyridge", "cardNo": "51/144", "link": "https://www.serebii.net/card/skyridge/051.shtml", "got": false, "note": ""}, {"no": 133, "name": "Eevee", "set": "Undaunted", "cardNo": "48/90", "link": "https://www.serebii.net/card/undaunted/048.shtml", "got": false, "note": ""}, {"no": 134, "name": "Vaporeon", "set": "Team Rocket", "cardNo": "45/82", "link": "https://www.serebii.net/card/teamrocket/045.shtml", "got": false, "note": ""}, {"no": 135, "name": "Jolteon", "set": "Team Rocket", "cardNo": "38/82", "link": "https://www.serebii.net/card/teamrocket/038.shtml", "got": true, "note": ""}, {"no": 136, "name": "Flareon", "set": "Vs", "cardNo": "89/141", "link": "https://www.serebii.net/card/vs/089.shtml", "got": false, "note": ""}, {"no": 137, "name": "Porygon", "set": "Gym Challenge", "cardNo": "98/132", "link": "https://www.serebii.net/card/gymchallenge/098.shtml", "got": true, "note": ""}, {"no": 138, "name": "Omanyte", "set": "Neo Destiny", "cardNo": "37/105", "link": "https://www.serebii.net/card/neodestiny/037.shtml", "got": false, "note": ""}, {"no": 139, "name": "Omastar", "set": "Neo Destiny", "cardNo": "19/105", "link": "https://www.serebii.net/card/neodestiny/019.shtml", "got": false, "note": ""}, {"no": 140, "name": "Kabuto", "set": "Legend Maker", "cardNo": "36/92", "link": "https://www.serebii.net/card/exlegendmaker/036.shtml", "got": false, "note": ""}, {"no": 141, "name": "Kabutops", "set": "Neo Destiny", "cardNo": "108/105", "link": "https://www.serebii.net/card/neodestiny/108.shtml", "got": false, "note": "Shining"}, {"no": 142, "name": "Aerodactyl", "set": "Vs", "cardNo": "99/141", "link": "https://www.serebii.net/card/vs/099.shtml", "got": false, "note": ""}, {"no": 143, "name": "Snorlax", "set": "Wizards Promo", "cardNo": "49/54", "link": "https://www.serebii.net/card/wizardspromos/049.shtml", "got": false, "note": ""}, {"no": 144, "name": "Articuno", "set": "Wizards Promo", "cardNo": "22/54", "link": "https://www.serebii.net/card/wizardspromos/022.shtml", "got": false, "note": "Fire Red holo"}, {"no": 145, "name": "Zapdos", "set": "Gym Challenge", "cardNo": "15/132", "link": "https://www.serebii.net/card/gymchallenge/015.shtml", "got": false, "note": "Holo"}, {"no": 146, "name": "Moltres", "set": "Wizards Promo", "cardNo": "21/54", "link": "https://www.serebii.net/card/wizardspromos/021.shtml", "got": false, "note": ""}, {"no": 147, "name": "Dratini", "set": "Dragon Frontiers", "cardNo": "46/101", "link": "https://www.serebii.net/card/exdragonfrontiers/046.shtml", "got": true, "note": ""}, {"no": 148, "name": "Dragonair", "set": "Ex Dragon", "cardNo": "14/97", "link": "https://www.serebii.net/card/exdragon/014.shtml", "got": false, "note": ""}, {"no": 149, "name": "Dragonite", "set": "Neo Destiny", "cardNo": "14/105", "link": "https://www.serebii.net/card/neodestiny/014.shtml", "got": false, "note": "Holo"}, {"no": 150, "name": "Mewtwo", "set": "Neo Destiny", "cardNo": "109/105", "link": "https://www.serebii.net/card/neodestiny/109.shtml", "got": false, "note": "Shining"}, {"no": 151, "name": "Mew", "set": "Dragon Frontiers", "cardNo": "101/101", "link": "https://www.serebii.net/card/exdragonfrontiers/101.shtml", "got": false, "note": ""}];
@@ -151,7 +171,8 @@ const SUPA_URL='https://odoaxtiszpryzfhuehms.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kb2F4dGlzenByeXpmaHVlaG1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMjA1NjYsImV4cCI6MjA5NzY5NjU2Nn0.ks_cRWiIajwH-Wp5YxoThhwopQjDJkj8o9FNj48XRgE';
 
 function sbFetch(path,opts={}){
-  return fetch(SUPA_URL+path,{...opts,headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',...(opts.headers||{})}});
+  const token=sessionStorage.getItem('sb_token')||SUPA_KEY;
+  return fetch(SUPA_URL+path,{...opts,headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json',...(opts.headers||{})}});
 }
 
 async function load(){
@@ -260,6 +281,7 @@ function draw(){
 
 function tog(e,no){
   e.stopPropagation();
+  if(!authed){showAuthModal(()=>{const c=cards.find(x=>x.no===no);if(c){c.got=!c.got;save();draw();}});return;}
   const c=cards.find(x=>x.no===no);
   if(c){c.got=!c.got;save();draw();}
 }
@@ -313,6 +335,7 @@ function openEdit(no){
 async function uploadImg(input){
   const file=input.files[0];
   if(!file)return;
+  if(!authed){showAuthModal(()=>{});toast('Please unlock editing first','err');return;}
   const box=document.getElementById('mimg-box');
   box.style.opacity='0.5';
   const ext=file.name.split('.').pop();
@@ -346,10 +369,125 @@ function setGot(v){
 }
 function closeModal(){document.getElementById('mr').innerHTML='';ed=null;}
 function saveEdit(){
+  if(!authed){showAuthModal(()=>saveEdit());return;}
   const i=cards.findIndex(c=>c.no===ed.no);
   if(i!==-1)cards[i]=ed;
   save();closeModal();draw();
 }
+
+/* ---- AUTH ---- */
+const ADMIN_EMAIL='Eseyermiyas4@googlemail.com';
+let authed=false;
+
+async function initAuth(){
+  // Check for existing session
+  try{
+    const r=await fetch(SUPA_URL+'/auth/v1/user',{
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+(sessionStorage.getItem('sb_token')||'')}
+    });
+    if(r.ok){const u=await r.json();if(u.id){setAuthed(true);return;}}
+  }catch(e){}
+  setAuthed(false);
+}
+
+async function signIn(password){
+  const r=await fetch(SUPA_URL+'/auth/v1/token?grant_type=password',{
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({email:ADMIN_EMAIL,password})
+  });
+  const data=await r.json();
+  if(data.access_token){
+    sessionStorage.setItem('sb_token',data.access_token);
+    setAuthed(true);
+    document.getElementById('auth-modal').innerHTML='';
+    toast('Editing unlocked');
+    return true;
+  }
+  return false;
+}
+
+function signOut(){
+  sessionStorage.removeItem('sb_token');
+  setAuthed(false);
+  toast('Signed out');
+}
+
+function setAuthed(v){
+  authed=v;
+  const btn=document.getElementById('auth-btn');
+  if(!btn)return;
+  if(v){
+    // Replace input with editing badge
+    btn.outerHTML='<button class="auth-badge" id="auth-btn" onclick="handleAuthBtn()">🔓 Editing</button>';
+  }else{
+    // Replace badge with password input
+    btn.outerHTML='<input type="password" id="auth-btn" placeholder="Password" onkeydown="if(event.key===\'Enter\')quickLogin(this.value)" style="padding:6px 11px;border:1px solid #ddd;border-radius:6px;font-size:13px;width:110px;outline:none">';
+  }
+}
+
+function handleAuthBtn(){
+  if(authed){if(confirm('Stop editing?'))signOut();}
+}
+
+function showAuthModal(onSuccess){
+  const modal=document.getElementById('auth-modal');
+  modal.innerHTML=`
+    <div class="auth-ov" id="auth-ov" onclick="if(event.target.id==='auth-ov')closeAuthModal()">
+      <div class="auth-box" style="position:relative;padding-top:36px">
+        <button class="auth-close" onclick="closeAuthModal()">×</button>
+        <input type="password" id="auth-pw" placeholder="Password" onkeydown="if(event.key==='Enter')tryLogin()">
+        <div class="auth-err" id="auth-err"></div>
+      </div>
+    </div>`;
+  document.getElementById('auth-pw').focus();
+  window._authSuccess=onSuccess;
+}
+
+async function quickLogin(pw){
+  if(!pw)return;
+  const ok=await signIn(pw);
+  if(!ok){
+    const btn=document.getElementById('auth-btn');
+    if(btn){btn.value='';btn.style.borderColor='#ef4444';setTimeout(()=>{btn.style.borderColor='#ddd';},1200);}
+  }
+}
+
+function closeAuthModal(){
+  document.getElementById('auth-modal').innerHTML='';
+  window._authSuccess=null;
+}
+
+async function tryLogin(){
+  const pw=document.getElementById('auth-pw').value;
+  const errEl=document.getElementById('auth-err');
+  errEl.textContent='Checking…';
+  const ok=await signIn(pw);
+  if(ok){
+    if(window._authSuccess)window._authSuccess();
+    window._authSuccess=null;
+  } else {
+    errEl.textContent='Incorrect password, try again.';
+    document.getElementById('auth-pw').value='';
+    document.getElementById('auth-pw').focus();
+  }
+}
+
+initAuth();
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Escape') return;
+  e.preventDefault();
+  // Close auth modal if open
+  if(document.getElementById('auth-modal') && document.getElementById('auth-ov')){
+    closeAuthModal();
+    return;
+  }
+  // Close card modal if open
+  if(document.getElementById('mr') && document.getElementById('ov')){
+    closeModal();
+    return;
+  }
+});
 
 load();
 </script>
